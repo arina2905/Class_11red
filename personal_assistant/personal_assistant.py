@@ -174,7 +174,108 @@ def note_manager():
 class Task:
     pass
 
+class Contact:
+    def __init__(self, id, name, phone, email):
+        self.id = id
+        self.name = name
+        self.phone = phone
+        self.email = email
 
+    def __repr__(self):
+        return f'Contact(id: {self.id}, name: {self.name}, phone: {self.phone}, email: {self.email})'
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'phone': self.phone,
+            'email': self.email
+        }
+
+class ContactManager:
+    def __init__(self, contacts_file='contacts.json'):
+        self.notes_file = contacts_file
+        self.load_contacts()
+
+    def load_contacts(self):
+        try:
+            with open(self.contacts_file, 'r') as file:
+                try:
+                    self.contacts = [Note(**note_data) for note_data in json.load(file)]
+                except json.JSONDecodeError:
+                    print('Неверный формат файла contacts.json')
+                    self.contacts = []
+        except FileNotFoundError:
+            print('Файл не существует')
+            self.contacts = []
+
+    def add_contact(self):
+        name = input('Введите имя контакта: ')
+        if not name:
+            return 'Имя не может быть пустым.'
+        phone = input('Введите номер телефона: ')
+        email = input("Введите email контакта:")
+        new_id = len(self.contacts) + 1 if self.contacts else 1
+        new_contact = Note(new_id, name, phone, email)
+        self.notes.append(new_contact)
+        self.save_contact()
+        return 'Контакт создан.'
+
+    def save_contact(self):
+        with open(self.contacts_file, 'w') as file:
+            json.dump([contact.to_dict() for contact in self.contacts], file, indent=4)
+
+    def edit_contact(self):
+        contact_id = int(input("Введите имя или номер контакта: "))
+        contact = self.find_contact(contact_id)
+        if contact:
+            contact.name = input(f'Новое имя ({contact.name}):') or contact.name
+            contact.phone = input(f'Новый номер телефона ({contact.phone}):') or contact.phone
+            contact.email = input(f'Новый email ({contact.email}):') or contact.email
+            self.save_contact()
+            print("Контакт обновлен.")
+        else:
+            print("Контакт не найден.")
+
+    def delete_note(self):
+        contact_id = int(input("Введите имя или номер контакта: "))
+        contact = self.find_contact(contact_id)
+        if contact:
+            self.contacts.remove(contact)
+            self.save_contact()
+            print('Контакт удален.')
+        else:
+            print("Контакт не найден.")
+
+    def find_contact(self, contact_name, contact_phone):
+        for contact in self.contacts:
+            if contact.name == contact_name or contact.phone == contact_phone:
+                return contact
+        return None
+
+    def import_from_csv(self, filepath):
+        try:
+            with open(filepath, 'r', encoding='utf-8') as file:
+                reader = csv.DictReader(file)
+                for row in reader:
+                    self.contacts.append(Note(int(row['id']), row['name'], row['phone'], row['email']))
+            self.save_contact()
+            print('Данные импортированы из CSV')
+        except FileNotFoundError:
+            print('Файл CSV не найден.')
+        except Exception as e:
+            print(f'Ошибка при импорте из CSV: {e}')
+
+    def export_to_csv(self, filepath):
+        try:
+            with open(filepath, 'w', newline='', encoding='utf-8') as file:
+                writer = csv.DictWriter(file)
+                writer.writerow(['id', 'name', 'phone', 'email'])
+                for contact in self.contacts:
+                    writer.writerow([contact.id, contact.name, contact.phone, contact.email])
+            print('Данные экспортированы в CSV.')
+        except Exception as e:
+            print(f'Ошибка при экспорте в CSV: {e}')
 
 class Calculator:
 
